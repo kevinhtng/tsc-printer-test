@@ -201,11 +201,9 @@
     <div class="card-label">Printer Port</div>
     <label>Select Port</label>
     <select id="printerPort">
-      <option value="USB002" selected>USB002 — TSC TX600 (default)</option>
-      <option value="USB001">USB001 — Other printer</option>
-      <option value="USB003">USB003</option>
-      <option value="COM3">COM3</option>
-      <option value="COM4">COM4</option>
+      <option value="TSC TX600" selected>TSC TX600</option>
+      <option value="TSC TX600B">TSC TX600B</option>
+      <option value="TSC TE310">TSC TE310</option>
     </select>
     <p class="hint">
       Match this to Device Manager → Printers → right-click your TSC → Properties → Ports tab.
@@ -265,7 +263,7 @@
     const ppidf = document.getElementById('ppidf').value;
     const verf  = document.getElementById('verf').value;
     const verb  = document.getElementById('verb').value;
-    const port  = document.getElementById('printerPort').value;
+    const port  = document.getElementById("printerNameManual").value || document.getElementById("printerPort").value;
     return `tscprint://print?ppidb=${enc(ppidb)}&ppidf=${enc(ppidf)}&verf=${enc(verf)}&verb=${enc(verb)}&port=${enc(port)}`;
   }
 
