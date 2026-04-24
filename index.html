@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TSC Label Printer — Web Serial Test</title>
+  <title>TSC Label Printer — Protocol Test</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet"/>
   <style>
     :root {
@@ -20,9 +20,7 @@
       --mono: 'Share Tech Mono', monospace;
       --sans: 'Barlow', sans-serif;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       background: var(--bg);
       color: var(--text);
@@ -36,253 +34,152 @@
         repeating-linear-gradient(0deg, transparent, transparent 39px, #1a1f2e 39px, #1a1f2e 40px),
         repeating-linear-gradient(90deg, transparent, transparent 39px, #1a1f2e 39px, #1a1f2e 40px);
     }
-
     header {
-      width: 100%;
-      max-width: 820px;
+      width: 100%; max-width: 820px;
       margin-bottom: 32px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      display: flex; align-items: center; gap: 16px;
       border-bottom: 1px solid var(--border);
       padding-bottom: 20px;
     }
-
     .logo-dot {
-      width: 14px; height: 14px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 12px var(--accent);
-      flex-shrink: 0;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 12px var(--accent); flex-shrink: 0;
     }
-
-    h1 {
-      font-family: var(--mono);
-      font-size: 1.1rem;
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .badge {
-      margin-left: auto;
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      padding: 4px 10px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      color: var(--muted);
-    }
-
+    h1 { font-family: var(--mono); font-size: 1.1rem; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+    .badge { margin-left: auto; font-family: var(--mono); font-size: 0.7rem; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); }
     .notice {
-      width: 100%;
-      max-width: 820px;
-      background: #1a1500;
-      border: 1px solid var(--warn);
-      border-left: 4px solid var(--warn);
-      border-radius: 6px;
-      padding: 12px 16px;
-      margin-bottom: 24px;
-      font-size: 0.85rem;
-      color: var(--warn);
-      line-height: 1.5;
+      width: 100%; max-width: 820px;
+      background: #001a10; border: 1px solid var(--success); border-left: 4px solid var(--success);
+      border-radius: 6px; padding: 12px 16px; margin-bottom: 24px;
+      font-size: 0.85rem; color: var(--success); line-height: 1.6;
     }
-
     .notice strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
-
-    .browser-check {
-      width: 100%;
-      max-width: 820px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-bottom: 24px;
-      font-family: var(--mono);
-      font-size: 0.82rem;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .browser-check.ok   { background: #001a0f; border: 1px solid var(--success); color: var(--success); }
-    .browser-check.fail { background: #1a0000; border: 1px solid var(--error);   color: var(--error); }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      width: 100%;
-      max-width: 820px;
-    }
-
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 820px; }
     @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 22px;
-    }
-
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 22px; }
     .card.full { grid-column: 1 / -1; }
-
-    .card-label {
-      font-family: var(--mono);
-      font-size: 0.7rem;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      margin-bottom: 14px;
+    .card-label { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 14px; }
+    label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; font-family: var(--mono); }
+    input[type="text"], select {
+      width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text); font-family: var(--mono); font-size: 0.85rem;
+      padding: 9px 12px; margin-bottom: 14px; outline: none; transition: border-color 0.2s;
     }
-
-    label {
-      display: block;
-      font-size: 0.78rem;
-      color: var(--muted);
-      margin-bottom: 4px;
-      font-family: var(--mono);
-    }
-
-    input[type="text"], input[type="number"], select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      padding: 9px 12px;
-      margin-bottom: 14px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
     input:focus, select:focus { border-color: var(--accent); }
-
-    .hint {
-      font-size: 0.72rem;
-      color: var(--muted);
-      margin-top: -10px;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
-
+    .hint { font-size: 0.72rem; color: var(--muted); margin-top: -10px; margin-bottom: 14px; line-height: 1.4; }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 11px 22px;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      font-family: var(--mono);
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px; border-radius: 6px; border: none; cursor: pointer;
+      font-family: var(--mono); font-size: 0.85rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em; transition: all 0.15s;
     }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #000;
-    }
+    .btn-primary { background: var(--accent); color: #000; }
     .btn-primary:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(0,229,255,0.35); }
-
-    .btn-secondary {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-    }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; box-shadow: none; }
-
+    .btn-warn { background: var(--accent2); color: #000; }
+    .btn-warn:hover { filter: brightness(1.15); }
     .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-
-    .status-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-family: var(--mono);
-      font-size: 0.8rem;
+    .preview-box {
+      background: var(--bg); border: 1px dashed var(--border); border-radius: 6px;
+      padding: 14px; font-family: var(--mono); font-size: 0.75rem; line-height: 1.8;
+      color: var(--muted); white-space: pre-wrap; word-break: break-all;
+    }
+    .url-box {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 12px 14px; font-family: var(--mono); font-size: 0.72rem;
+      color: var(--accent2); word-break: break-all; line-height: 1.6;
       margin-bottom: 14px;
-      border: 1px solid var(--border);
-      background: var(--bg);
     }
-
-    .status-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .status-dot.idle       { background: var(--muted); }
-    .status-dot.connected  { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .status-dot.printing   { background: var(--warn); box-shadow: 0 0 8px var(--warn); animation: pulse 0.8s infinite; }
-    .status-dot.error      { background: var(--error); box-shadow: 0 0 8px var(--error); }
-
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
     #log {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 14px;
-      font-family: var(--mono);
-      font-size: 0.78rem;
-      line-height: 1.7;
-      height: 200px;
-      overflow-y: auto;
-      color: var(--muted);
+      background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+      padding: 14px; font-family: var(--mono); font-size: 0.78rem;
+      line-height: 1.7; height: 160px; overflow-y: auto; color: var(--muted);
     }
-
     .log-ok   { color: var(--success); }
     .log-err  { color: var(--error); }
     .log-warn { color: var(--warn); }
     .log-info { color: var(--accent); }
-    .log-cmd  { color: #a78bfa; }
-
-    .preview-box {
-      background: var(--bg);
-      border: 1px dashed var(--border);
-      border-radius: 6px;
-      padding: 14px;
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      line-height: 1.8;
-      color: var(--muted);
-      white-space: pre-wrap;
-      word-break: break-all;
+    .step {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
     }
-
-    .tag { color: var(--accent2); }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      font-family: var(--mono); font-size: 0.75rem; color: var(--accent);
+      background: #001a1f; border: 1px solid var(--accent);
+      border-radius: 4px; padding: 2px 8px; flex-shrink: 0; margin-top: 2px;
+    }
+    .step-text { font-size: 0.85rem; line-height: 1.6; color: var(--text); }
+    .step-text code { font-family: var(--mono); color: var(--accent2); font-size: 0.8rem; }
+    .step-text strong { color: var(--warn); }
   </style>
 </head>
 <body>
 
 <header>
   <div class="logo-dot"></div>
-  <h1>TSC Label Printer // Web Serial Test</h1>
-  <span class="badge">DEMO BUILD</span>
+  <h1>TSC Label Printer // Protocol Handler Test</h1>
+  <span class="badge">NO IE REQUIRED</span>
 </header>
 
-<!-- HTTPS / browser check -->
-<div id="browserCheck" class="browser-check fail">
-  <span>⚠</span> <span id="browserMsg">Checking browser support...</span>
-</div>
-
-<!-- Important notice -->
 <div class="notice">
-  <strong>⚠ TEST PAGE — Safe to use, nothing goes to production</strong>
-  This page simulates the same data your server template variables (<code>&lt;%=getppidbarcode()%&gt;</code> etc.) would inject, using manual input fields.
-  On the real server those fields auto-fill from the database. The printing logic is identical.
+  <strong>✓ How this works</strong>
+  This page calls <code>tscprint://</code> — a custom URL protocol registered on this PC.
+  Chrome/Edge hand it off to <code>tscprint.vbs</code> which sends raw TSPL commands directly
+  to the printer over USB. No plugins, no ActiveX, no Internet Explorer.
 </div>
 
 <div class="grid">
 
-  <!-- Simulated server data inputs -->
+  <!-- Setup checklist -->
+  <div class="card full">
+    <div class="card-label">Setup Checklist — Do These First</div>
+    <div class="step">
+      <span class="step-num">01</span>
+      <div class="step-text">
+        Create the folder <code>C:\TSCPrint\</code> on this PC.
+      </div>
+    </div>
+    <div class="step">
+      <span class="step-num">02</span>
+      <div class="step-text">
+        Copy <code>tscprint.vbs</code> into <code>C:\TSCPrint\</code>.
+      </div>
+    </div>
+    <div class="step">
+      <span class="step-num">03</span>
+      <div class="step-text">
+        <strong>Edit install.reg</strong> if you put the .vbs somewhere other than
+        <code>C:\TSCPrint\tscprint.vbs</code>. Open it in Notepad and update the path.
+      </div>
+    </div>
+    <div class="step">
+      <span class="step-num">04</span>
+      <div class="step-text">
+        Double-click <code>install.reg</code> → click <strong>Yes</strong> on the UAC prompt →
+        click <strong>Yes</strong> on the registry confirmation. Done — one time per PC.
+      </div>
+    </div>
+    <div class="step">
+      <span class="step-num">05</span>
+      <div class="step-text">
+        Open Device Manager → Printers → note your TSC printer's port.
+        Default in the script is <code>USB002</code>. If yours is different,
+        open <code>tscprint.vbs</code> in Notepad and change the <code>printerPort</code> line.
+      </div>
+    </div>
+    <div class="step">
+      <span class="step-num">06</span>
+      <div class="step-text">
+        Fill in the test data below and click <strong>▶ Print Label</strong>.
+        Chrome/Edge will show a popup asking if it's OK to open the protocol — click
+        <strong>Open</strong>. The script runs silently and the label prints.
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulated server data -->
   <div class="card">
     <div class="card-label">Simulated Server Variables</div>
     <label>ppidb — PPID Barcode <span style="color:var(--accent2)">(min 20 chars)</span></label>
@@ -299,86 +196,58 @@
     <input type="text" id="verb" value="R01"/>
   </div>
 
-  <!-- Printer settings -->
+  <!-- Printer port selector -->
   <div class="card">
-    <div class="card-label">Printer Settings</div>
-    <label>Printer Name (for reference only)</label>
-    <input type="text" id="printerName" value="TSC TX600"/>
-
-    <label>Baud Rate</label>
-    <select id="baudRate">
-      <option value="9600" selected>9600 (TSC default)</option>
-      <option value="19200">19200</option>
-      <option value="38400">38400</option>
-      <option value="115200">115200</option>
+    <div class="card-label">Printer Port</div>
+    <label>Select Port</label>
+    <select id="printerPort">
+      <option value="USB002" selected>USB002 — TSC TX600 (default)</option>
+      <option value="USB001">USB001 — Other printer</option>
+      <option value="USB003">USB003</option>
+      <option value="COM3">COM3</option>
+      <option value="COM4">COM4</option>
     </select>
-
-    <label>Data Bits</label>
-    <select id="dataBits">
-      <option value="8" selected>8</option>
-      <option value="7">7</option>
-    </select>
-
-    <label>Stop Bits</label>
-    <select id="stopBits">
-      <option value="1" selected>1</option>
-      <option value="2">2</option>
-    </select>
+    <p class="hint">
+      Match this to Device Manager → Printers → right-click your TSC → Properties → Ports tab.
+      The .vbs script uses whatever you select here via the URL.
+    </p>
+    <p class="hint" style="color:var(--warn)">
+      ⚠ Note: the port selector here passes the value to the .vbs script via the URL.
+      Make sure the port in <code>tscprint.vbs</code> matches, OR the script reads it
+      from the URL (the version provided does read it dynamically — see below).
+    </p>
   </div>
 
-  <!-- Status + controls -->
+  <!-- URL preview -->
   <div class="card full">
-    <div class="card-label">Connection &amp; Print</div>
+    <div class="card-label">Protocol URL Being Called <span style="color:var(--muted);font-size:0.7rem">(updates live)</span></div>
+    <div class="url-box" id="urlPreview">—</div>
 
-    <div class="status-bar">
-      <div class="status-dot idle" id="statusDot"></div>
-      <span id="statusText">Not connected — click Connect Port to begin</span>
-    </div>
+    <div class="card-label" style="margin-top:8px">TSPL Commands That Will Print</div>
+    <div class="preview-box" id="tsplPreview">Fill in the fields above to see the TSPL commands.</div>
+  </div>
 
+  <!-- Action buttons -->
+  <div class="card full">
     <div class="btn-row">
-      <button class="btn btn-secondary" id="btnConnect" onclick="connectPort()">⇌ Connect Port</button>
-      <button class="btn btn-primary"   id="btnPrint"   onclick="printLabel()" disabled>▶ Print Label</button>
-      <button class="btn btn-secondary"                 onclick="clearLog()">✕ Clear Log</button>
+      <button class="btn btn-primary" onclick="printLabel()">▶ Print Label</button>
+      <button class="btn btn-warn"    onclick="testProtocol()">⚡ Test Protocol Only (no print)</button>
+      <button class="btn btn-secondary" onclick="clearLog()">✕ Clear Log</button>
     </div>
-  </div>
-
-  <!-- TSPL Command Preview -->
-  <div class="card full">
-    <div class="card-label">TSPL Command Preview <span style="color:var(--muted);font-size:0.7rem">(updates live)</span></div>
-    <div class="preview-box" id="preview">Fill in the fields above to see the commands that will be sent to the printer.</div>
   </div>
 
   <!-- Log -->
   <div class="card full">
     <div class="card-label">Activity Log</div>
-    <div id="log"><span class="log-info">// Ready. Connect a port and print.</span></div>
+    <div id="log"><span class="log-info">// Ready. Complete setup steps above then click Print Label.</span></div>
   </div>
 
 </div>
 
 <script>
-  // ── Browser / HTTPS check ────────────────────────────────────────────────
-  (function() {
-    const el  = document.getElementById('browserCheck');
-    const msg = document.getElementById('browserMsg');
-    if (!('serial' in navigator)) {
-      msg.textContent = '✗ Web Serial API not supported in this browser. Use Chrome or Edge (version 89+).';
-    } else if (!window.isSecureContext) {
-      el.className = 'browser-check fail';
-      msg.textContent = '✗ Page is NOT on HTTPS (or localhost). Web Serial requires a secure context. Host this page on GitHub Pages or HTTPS.';
-    } else {
-      el.className = 'browser-check ok';
-      msg.textContent = '✓ Browser supports Web Serial API and page is on a secure context. Ready to print.';
-    }
-  })();
-
-  // ── State ────────────────────────────────────────────────────────────────
-  let port   = null;
-  let writer = null;
-
   // ── Logging ──────────────────────────────────────────────────────────────
   function log(msg, cls='') {
-    const div = document.getElementById('log');
+    const div  = document.getElementById('log');
     const line = document.createElement('div');
     if (cls) line.className = cls;
     line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
@@ -387,25 +256,32 @@
   }
   function clearLog() { document.getElementById('log').innerHTML = ''; }
 
-  // ── Status ───────────────────────────────────────────────────────────────
-  function setStatus(state, text) {
-    document.getElementById('statusDot').className  = 'status-dot ' + state;
-    document.getElementById('statusText').textContent = text;
+  // ── URL encode helper ─────────────────────────────────────────────────────
+  function enc(s) { return encodeURIComponent(s); }
+
+  // ── Build the tscprint:// URL ─────────────────────────────────────────────
+  function buildURL() {
+    const ppidb = document.getElementById('ppidb').value;
+    const ppidf = document.getElementById('ppidf').value;
+    const verf  = document.getElementById('verf').value;
+    const verb  = document.getElementById('verb').value;
+    const port  = document.getElementById('printerPort').value;
+    return `tscprint://print?ppidb=${enc(ppidb)}&ppidf=${enc(ppidf)}&verf=${enc(verf)}&verb=${enc(verb)}&port=${enc(port)}`;
   }
 
-  // ── Live preview ─────────────────────────────────────────────────────────
-  function buildCommands() {
+  // ── Build TSPL preview ────────────────────────────────────────────────────
+  function buildTSPL() {
     const ppidb = document.getElementById('ppidb').value;
     const ppidf = document.getElementById('ppidf').value;
     const verb  = document.getElementById('verb').value;
+
+    if (ppidb.length < 20) return '⚠ ppidb must be at least 20 characters (currently ' + ppidb.length + ')';
 
     let madeIn = 'China';
     if (ppidf.substring(0,2) === 'VN') madeIn = 'VietNam';
     else if (ppidf.substring(0,2) === 'TW') madeIn = 'Taiwan';
 
-    let partNum = ppidf.charAt(3) === '0'
-      ? ppidf.substring(4,9)
-      : ppidf.substring(3,9);
+    let partNum = ppidf.charAt(3) === '0' ? ppidf.substring(4,9) : ppidf.substring(3,9);
 
     return [
       'CLS',
@@ -418,127 +294,63 @@
       `TEXT 0,185,"ARIAL.TTF",2,1,1,"${ppidf.substring(0,16)}"`,
       `TEXT 0,223,"ARIAL.TTF",2,1,1,"${ppidf.substring(16,28)}-${verb}"`,
       'PRINT 1,1'
-    ];
+    ].join('\r\n');
   }
 
+  // ── Live preview update ───────────────────────────────────────────────────
   function updatePreview() {
-    const ppidb = document.getElementById('ppidb').value;
-    if (ppidb.length < 20) {
-      document.getElementById('preview').textContent =
-        '⚠ ppidb must be at least 20 characters (currently ' + ppidb.length + ')';
-      return;
-    }
-    document.getElementById('preview').textContent = buildCommands().join('\r\n');
+    document.getElementById('urlPreview').textContent  = buildURL();
+    document.getElementById('tsplPreview').textContent = buildTSPL();
   }
-
-  // Listen to all inputs for live preview
-  document.querySelectorAll('input, select').forEach(el => {
-    el.addEventListener('input', updatePreview);
-  });
+  document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', updatePreview));
   updatePreview();
 
-  // ── Connect ──────────────────────────────────────────────────────────────
-  async function connectPort() {
-    try {
-      if (port) {
-        // Disconnect
-        if (writer) { writer.releaseLock(); writer = null; }
-        await port.close();
-        port = null;
-        document.getElementById('btnConnect').textContent = '⇌ Connect Port';
-        document.getElementById('btnPrint').disabled = true;
-        setStatus('idle', 'Disconnected.');
-        log('Port closed.', 'log-warn');
-        return;
-      }
+  // ── Print label ───────────────────────────────────────────────────────────
+  function printLabel() {
+    // ── PRODUCTION EQUIVALENT ────────────────────────────────────────────
+    // On your real server page these come from template variables:
+    //   var ppidb = '<%=getppidbarcode() %>'
+    //   var ppidf = '<%=getppidfont() %>'
+    //   var verf  = '<%=getverfont() %>'
+    //   var verb  = '<%=getverbarcode() %>'
+    // For this test we read from input fields instead.
 
-      log('Requesting serial port — browser dialog will appear...', 'log-info');
-      port = await navigator.serial.requestPort();
-      await port.open({
-        baudRate: parseInt(document.getElementById('baudRate').value),
-        dataBits: parseInt(document.getElementById('dataBits').value),
-        stopBits: parseInt(document.getElementById('stopBits').value),
-        parity:   'none'
-      });
-
-      writer = port.writable.getWriter();
-      setStatus('connected', 'Connected to printer — ready to print.');
-      log('✓ Port opened successfully.', 'log-ok');
-      document.getElementById('btnConnect').textContent = '✕ Disconnect';
-      document.getElementById('btnPrint').disabled = false;
-
-    } catch(err) {
-      setStatus('error', 'Connection failed: ' + err.message);
-      log('✗ ' + err.message, 'log-err');
-      port = null; writer = null;
+    var ppidb = document.getElementById('ppidb').value;
+    if (ppidb.length < 20) {
+      log('✗ Aborted — ppidb less than 20 chars. Matches production guard.', 'log-err');
+      alert('ppidb must be at least 20 characters.');
+      return;
     }
+    var ppidf = document.getElementById('ppidf').value;
+    var verf  = document.getElementById('verf').value;
+    var verb  = document.getElementById('verb').value;
+    // ── END PRODUCTION EQUIVALENT ─────────────────────────────────────────
+
+    const url = buildURL();
+    log('Calling: ' + url, 'log-info');
+    log('Chrome/Edge will show a confirmation popup — click Open.', 'log-warn');
+
+    // This is the magic line — browser hands off to tscprint.vbs
+    window.location.href = url;
+
+    setTimeout(() => {
+      log('Protocol call sent. If the label did not print:', 'log-ok');
+      log('  1. Check that install.reg was run on this PC', 'log-warn');
+      log('  2. Check that tscprint.vbs is in C:\\TSCPrint\\', 'log-warn');
+      log('  3. Check the printer port in tscprint.vbs matches Device Manager', 'log-warn');
+    }, 1500);
   }
 
-  // ── Print ────────────────────────────────────────────────────────────────
-  async function printLabel() {
-    try {
-      // ── THIS IS THE SECTION YOUR PRODUCTION CODE USES ──────────────────
-      // On your real server, these come from template variables:
-      //   var ppidb = '<%=getppidbarcode() %>'
-      //   var ppidf = '<%=getppidfont() %>'
-      //   var verf  = '<%=getverfont() %>'
-      //   var verb  = '<%=getverbarcode() %>'
-      // For this test page we read them from the input fields instead.
-
-      var ppidb = document.getElementById('ppidb').value;
-      if (ppidb.length < 20) {
-        log('✗ ppidb too short (< 20 chars). Aborted — matches production guard.', 'log-err');
-        alert('ppidb must be at least 20 characters (production guard active).');
-        return;
-      }
-      var ppidf = document.getElementById('ppidf').value;
-      var verf  = document.getElementById('verf').value;
-      var verb  = document.getElementById('verb').value;
-      // ── END OF PRODUCTION DATA SECTION ─────────────────────────────────
-
-      if (!port || !writer) {
-        alert('Not connected. Click Connect Port first.');
-        return;
-      }
-
-      setStatus('printing', 'Sending label to printer...');
-      log('Starting print job...', 'log-info');
-
-      const enc  = new TextEncoder();
-      const send = async (cmd) => {
-        await writer.write(enc.encode(cmd + '\r\n'));
-        log('  → ' + cmd, 'log-cmd');
-      };
-
-      // Determine country
-      let madeIn = 'China';
-      if (ppidf.substring(0,2) === 'VN') madeIn = 'VietNam';
-      else if (ppidf.substring(0,2) === 'TW') madeIn = 'Taiwan';
-
-      // Determine part number (mirrors your original leading-zero logic)
-      let partNum = ppidf.charAt(3) === '0'
-        ? ppidf.substring(4,9)
-        : ppidf.substring(3,9);
-
-      // Send TSPL commands (same as your original ActiveX calls)
-      await send('CLS');
-      await send('REFERENCE 0,0');
-      await send('OFFSET 0.00');
-      await send(`DMATRIX 0,10,400,400,x9,"${ppidb}${verb}"`);
-      await send(`TEXT 163,21,"ARIAL.TTF",2,1,1,"Made In"`);
-      await send(`TEXT 163,55,"ARIAL.TTF",2,1,1,"${madeIn}"`);
-      await send(`TEXT 163,135,"ARIAL.TTF",2,1,1,"${partNum}"`);
-      await send(`TEXT 0,185,"ARIAL.TTF",2,1,1,"${ppidf.substring(0,16)}"`);
-      await send(`TEXT 0,223,"ARIAL.TTF",2,1,1,"${ppidf.substring(16,28)}-${verb}"`);
-      await send('PRINT 1,1');
-
-      setStatus('connected', 'Print job sent successfully.');
-      log('✓ Label printed.', 'log-ok');
-
-    } catch(err) {
-      setStatus('error', 'Print failed: ' + err.message);
-      log('✗ ' + err.message, 'log-err');
-    }
+  // ── Test protocol only (no real data) ─────────────────────────────────────
+  function testProtocol() {
+    log('Testing protocol handler only — sending dummy data...', 'log-info');
+    // Send a ppidb that is < 20 chars on purpose so VBS aborts without printing
+    const testUrl = 'tscprint://print?ppidb=TEST&ppidf=TEST&verf=TEST&verb=TEST&port=USB002';
+    window.location.href = testUrl;
+    setTimeout(() => {
+      log('If a popup appeared saying "ppidb too short" — protocol is working! ✓', 'log-ok');
+      log('If nothing happened — install.reg has not been run yet.', 'log-err');
+    }, 1500);
   }
 </script>
 </body>
