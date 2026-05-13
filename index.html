@@ -1,191 +1,244 @@
 <!DOCTYPE html>
 <!-- ============================================================
   FILE: index.html
-  WHAT THIS FILE IS:
-    A single HTML file that contains 3 things in one:
-      1. HTML  — the structure/layout of the test page UI
-      2. CSS   — the styling for both the screen UI and the label
-      3. JS    — the logic that builds the label and triggers printing
+  WHAT THIS IS:
+    A sandbox test page that replicates the IGS internal system
+    layout (header, left nav, main form) with a working label
+    print function using window.print() — no IE, no ActiveX,
+    no plugins, no VBS needed.
 
   HOW PRINTING WORKS:
-    window.print() sends to whatever printer is set as DEFAULT
-    in Windows Settings → Printers & Scanners.
-    No plugins, no ActiveX, no IE, no VBS, no registry files.
+    window.print() sends to the default Windows printer.
+    Change default printer in Windows Settings → Printers & Scanners.
     Works on Zebra, TSC, HP — any printer with a Windows driver.
 
   FOR PRODUCTION:
-    Boss replaces the input field values in buildLabel() with
-    his server-side template variables e.g. <%=getDPN()%>
-    Everything else stays the same.
+    Boss replaces the hardcoded field values in buildLabel()
+    with his server-side template variables e.g. <%=getDPN()%>
 ============================================================ -->
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Label Print Test</title>
+  <title>IGS — Board Diagnosis</title>
 
-  <!-- ══════════════════════════════════════════════════════════
-    EXTERNAL RESOURCES
-    These load from the internet. On warehouse PCs with no
-    internet, host these files locally or on your intranet server.
-    - Google Fonts: just for the test page UI, not the label itself
-    - JsBarcode: generates the CODE128 barcodes on the label
-  ══════════════════════════════════════════════════════════ -->
-  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <!-- JsBarcode: generates CODE128 barcodes on the label -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 
   <style>
-    /* ══════════════════════════════════════════════════════════
-      CSS SECTION 1 — SCREEN UI STYLES
-      These styles only affect what you see on screen (the test
-      form, buttons, preview area). They do NOT affect printing.
-      The @media print rule at the bottom hides all of this
-      when the browser sends the page to the printer.
-    ══════════════════════════════════════════════════════════ */
-    :root {
-      /* Color variables used throughout the UI */
-      --bg:      #0d0f14;   /* page background */
-      --panel:   #151820;   /* card background */
-      --border:  #2a2f3d;   /* card borders */
-      --accent:  #00e5ff;   /* teal highlight color */
-      --accent2: #ff6b35;   /* orange highlight color */
-      --success: #00e676;   /* green for success messages */
-      --warn:    #ffd740;   /* yellow for warnings */
-      --text:    #e0e6f0;   /* main text color */
-      --muted:   #6b7694;   /* secondary/label text */
-      --mono:    'Share Tech Mono', monospace;
-      --sans:    'Barlow', sans-serif;
-    }
-
+    /* ══════════════════════════════════════════════════════
+       CSS — RESET & BASE
+    ══════════════════════════════════════════════════════ */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      background: #d0d8e8;
       min-height: 100vh;
+    }
+
+    /* ══════════════════════════════════════════════════════
+       CSS — TOP HEADER BAR
+       Replicates the blue gradient bar at the top of the
+       screenshot with the IGS logo area and account info.
+    ══════════════════════════════════════════════════════ */
+    .top-bar {
+      background: linear-gradient(180deg, #5b7db1 0%, #3a5a8c 100%);
+      color: #fff;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      padding: 40px 20px;
-      /* grid line background pattern, purely decorative */
-      background-image:
-        repeating-linear-gradient(0deg,transparent,transparent 39px,#1a1f2e 39px,#1a1f2e 40px),
-        repeating-linear-gradient(90deg,transparent,transparent 39px,#1a1f2e 39px,#1a1f2e 40px);
+      justify-content: space-between;
+      padding: 4px 12px;
+      font-size: 12px;
+      min-height: 28px;
+    }
+    .top-bar-left  { color: #fff; font-weight: bold; }
+    .top-bar-right { display: flex; align-items: center; gap: 20px; }
+    .top-bar-right a {
+      color: #fff; text-decoration: none; font-size: 12px;
+    }
+    .top-bar-right a:hover { text-decoration: underline; }
+
+    /* ══════════════════════════════════════════════════════
+       CSS — LOGO / COMPANY HEADER ROW
+       The white row with IGS logo, "Repair Services" center,
+       and "Test DB" right — matches screenshot layout.
+    ══════════════════════════════════════════════════════ */
+    .logo-bar {
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 2px solid #b0b8c8;
+    }
+    .logo-box {
+      border: 2px solid #333;
+      padding: 4px 10px;
+      display: inline-block;
+    }
+    .logo-box .igs-text {
+      font-size: 22px; font-weight: bold; letter-spacing: 3px; line-height: 1;
+    }
+    .logo-box .sub-text {
+      font-size: 7px; letter-spacing: 1px; text-align: center;
+      color: #333; display: block; margin-top: 2px;
+    }
+    .logo-bar-center { font-size: 14px; font-weight: bold; color: #333; }
+    .logo-bar-right  { font-size: 13px; color: #333; }
+
+    /* ══════════════════════════════════════════════════════
+       CSS — MAIN LAYOUT
+       Two column layout: left nav + main content area.
+    ══════════════════════════════════════════════════════ */
+    .main-layout {
+      display: flex;
+      min-height: calc(100vh - 80px);
     }
 
-    header {
-      width: 100%; max-width: 860px; margin-bottom: 28px;
-      display: flex; align-items: center; gap: 16px;
-      border-bottom: 1px solid var(--border); padding-bottom: 20px;
+    /* ══════════════════════════════════════════════════════
+       CSS — LEFT NAVIGATION
+       Blue sidebar with collapsible station links matching
+       the screenshot exactly.
+    ══════════════════════════════════════════════════════ */
+    .left-nav {
+      width: 130px;
+      min-width: 130px;
+      background: linear-gradient(180deg, #4a6fa5 0%, #2c4a7c 100%);
+      padding: 0;
+      overflow-y: auto;
     }
-    .logo-dot {
-      width: 14px; height: 14px; border-radius: 50%;
-      background: var(--accent); box-shadow: 0 0 12px var(--accent); flex-shrink: 0;
+    .nav-header {
+      background: #1a3a6c;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid #2a4a7c;
     }
-    h1 {
-      font-family: var(--mono); font-size: 1.05rem;
-      color: var(--accent); letter-spacing: .08em; text-transform: uppercase;
+    .nav-header::before {
+      content: '⊞';
+      font-size: 14px;
     }
-    .badge {
-      margin-left: auto; font-family: var(--mono); font-size: .7rem;
-      padding: 4px 10px; border: 1px solid var(--border);
-      border-radius: 4px; color: var(--muted);
+    .nav-item {
+      display: block;
+      color: #d0e0ff;
+      font-size: 11.5px;
+      padding: 4px 10px 4px 16px;
+      text-decoration: none;
+      border-bottom: 1px solid #3a5a8c;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .nav-item:hover  { background: #3a5a9c; color: #fff; }
+    .nav-item.active { background: #2a4a7c; color: #fff; font-weight: bold; }
+    .nav-item::before { content: '› '; }
+
+    /* ══════════════════════════════════════════════════════
+       CSS — MAIN CONTENT AREA
+       White area to the right of the nav where the form sits.
+    ══════════════════════════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      background: #fff;
+      padding: 20px 30px;
     }
 
-    /* Two column grid layout for the form cards */
-    .grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 20px; width: 100%; max-width: 860px;
-    }
-    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-
-    .card {
-      background: var(--panel); border: 1px solid var(--border);
-      border-radius: 10px; padding: 22px;
-    }
-    .card.full { grid-column: 1 / -1; } /* spans both columns */
-
-    .card-label {
-      font-family: var(--mono); font-size: .7rem; color: var(--accent);
-      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 14px;
+    /* ══════════════════════════════════════════════════════
+       CSS — BOARD DIAGNOSIS FORM
+       Matches the form layout in the screenshot.
+    ══════════════════════════════════════════════════════ */
+    .form-title {
+      color: #1a3a9c;
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 18px;
     }
 
-    /* Form field labels */
-    label {
-      display: block; font-size: .78rem; color: var(--muted);
-      margin-bottom: 4px; font-family: var(--mono);
+    .form-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .form-row label {
+      width: 100px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      flex-shrink: 0;
+    }
+    .form-row select, .form-row input[type=text] {
+      font-size: 13px;
+      padding: 2px 6px;
+      border: 1px solid #999;
+      border-radius: 2px;
+      background: #fff;
+      height: 24px;
+    }
+    .form-row input[type=text] { width: 200px; }
+    .board-count {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 12px;
+      margin-left: 110px;
     }
 
-    /* Text inputs */
-    input[type=text] {
-      width: 100%; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 5px; color: var(--text); font-family: var(--mono);
-      font-size: .85rem; padding: 9px 12px; margin-bottom: 12px;
-      outline: none; transition: border-color .2s;
-    }
-    input[type=text]:focus { border-color: var(--accent); }
+    /* Scan PPID input — wider, matches screenshot */
+    #scanPPID { width: 220px; }
 
-    /* Checkbox row (for REFURBISHED toggle) */
-    .checkbox-row {
-      display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    /* ══════════════════════════════════════════════════════
+       CSS — PRINT BUTTON
+       Styled to match the IGS system's button style.
+    ══════════════════════════════════════════════════════ */
+    .print-btn {
+      background: linear-gradient(180deg, #6a8fc0 0%, #3a6aaa 100%);
+      color: #fff;
+      border: 1px solid #2a5a9a;
+      border-radius: 3px;
+      padding: 4px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-left: 110px;
+      margin-top: 6px;
+      font-family: Arial, Helvetica, sans-serif;
     }
-    .checkbox-row input { width: 16px; height: 16px; accent-color: var(--accent); }
-    .checkbox-row label { margin: 0; color: var(--text); font-size: .85rem; font-family: var(--sans); }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 24px; border-radius: 6px; border: none; cursor: pointer;
-      font-family: var(--mono); font-size: .85rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .06em; transition: all .15s;
-    }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:hover { filter: brightness(1.15); box-shadow: 0 0 16px rgba(0,229,255,.35); }
-    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-
-    /* Notice/info banner at top */
-    .notice {
-      width: 100%; max-width: 860px; background: #001a10;
-      border: 1px solid var(--success); border-left: 4px solid var(--success);
-      border-radius: 6px; padding: 12px 16px; margin-bottom: 24px;
-      font-size: .85rem; color: var(--success); line-height: 1.6;
-    }
-    .notice strong { display: block; margin-bottom: 4px; }
-    .notice code {
-      font-family: var(--mono); background: #002a18;
-      padding: 1px 5px; border-radius: 3px;
+    .print-btn:hover {
+      background: linear-gradient(180deg, #7a9fd0 0%, #4a7aba 100%);
     }
 
-    /* Gray box that wraps the on-screen label preview */
-    .label-screen-wrap {
-      background: #e0e0e0; border-radius: 8px; padding: 20px;
-      display: flex; justify-content: center; align-items: center;
+    /* Result rows at bottom */
+    .result-section { margin-top: 20px; }
+    .result-row {
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 6px;
+      font-weight: bold;
     }
 
-    /* ══════════════════════════════════════════════════════════
-      CSS SECTION 2 — LABEL STYLES
-      These styles define what the printed label looks like.
-      They apply to BOTH the on-screen preview AND the printed
-      output. Sizes use inches (in) so they map directly to
-      the physical label. The printer driver sets the paper
-      size — we just define the content layout within it.
-    ══════════════════════════════════════════════════════════ */
-
-    /* Outer label container — 4 inches wide, 2 inches tall */
+    /* ══════════════════════════════════════════════════════
+       CSS — LABEL STYLES (4x2 Zebra)
+       These styles define what the printed label looks like.
+       Sizes in inches so they map to physical label dimensions.
+       The printer driver controls the paper size.
+    ══════════════════════════════════════════════════════ */
     .label-4x2 {
       width: 4in;
       height: 2in;
       background: #fff;
       color: #000;
-      font-family: Arial, Helvetica, sans-serif; /* clean sans-serif, matches photo */
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 7.5pt;
-      position: relative; /* needed so absolute children position correctly */
-      overflow: hidden;   /* clip anything that goes outside the label edge */
+      position: relative;
+      overflow: hidden;
       padding: 0.07in 0.08in;
     }
-
-    /* REFURBISHED box border — only shown when item is refurbished */
     .refurb-banner {
       position: absolute;
       top: 0.05in; left: 50%; transform: translateX(-50%);
@@ -193,275 +246,310 @@
       font-size: 7pt; font-weight: bold; letter-spacing: .05em;
       padding: 1px 10px; white-space: nowrap;
     }
-
-    /* Large part number shown centered when refurbished */
     .refurb-pn {
       position: absolute;
       top: 0.22in; left: 50%; transform: translateX(-50%);
       font-size: 13pt; font-weight: bold; white-space: nowrap;
     }
-
-    /* Asterisk shown top-right when refurbished */
     .asterisk {
       position: absolute;
       top: 0.02in; right: 0.1in;
       font-size: 20pt; font-weight: bold; line-height: 1;
     }
-
-    /* Left column — D P/N, PPID, Description, Date */
     .col-left {
       position: absolute;
-      left: 0.08in;
-      right: 1.25in; /* leaves room for right column */
-      top: 0.07in;
+      left: 0.08in; right: 1.25in; top: 0.07in;
     }
-    /* When refurbished, push content down to make room for banner */
     .col-left.pushed { top: 0.42in; }
-
     .field-row { margin-bottom: 0.01in; line-height: 1.2; }
     .field-row b { font-weight: bold; }
-
-    /* Barcodes inside left column span full column width */
     .bc { display: block; width: 100%; }
-
-    /* Right column — ASSY REV, BIOS REV */
     .col-right {
       position: absolute;
-      right: 0.06in;
-      width: 1.1in;
-      top: 0.07in;
-      text-align: right;
+      right: 0.06in; width: 1.1in; top: 0.07in; text-align: right;
     }
     .col-right.pushed { top: 0.42in; }
-
     .rev-label { font-weight: bold; font-size: 7pt; }
     .rev-bc    { display: block; width: 100%; margin-top: 1px; margin-bottom: 0.05in; }
-
-    /* CO line pinned to bottom-left of label */
     .co-row {
       position: absolute;
-      bottom: 0.06in; left: 0.08in;
-      font-size: 7pt;
+      bottom: 0.06in; left: 0.08in; font-size: 7pt;
     }
 
-    /* ══════════════════════════════════════════════════════════
-      CSS SECTION 3 — PRINT MEDIA QUERY
-      When window.print() fires, the browser applies these rules.
-      Everything on the page is hidden EXCEPT #printArea which
-      contains the label. This is how we print only the label
-      and not the form/buttons/UI around it.
-    ══════════════════════════════════════════════════════════ */
-    #printArea { display: none; } /* hidden on screen */
+    /* ══════════════════════════════════════════════════════
+       CSS — PRINT MEDIA QUERY
+       When window.print() fires, hides everything except
+       #printArea so only the label goes to the printer.
+    ══════════════════════════════════════════════════════ */
+    #printArea { display: none; }
 
     @media print {
-      body > * { display: none !important; } /* hide everything */
-      #printArea { display: block !important; } /* show only the label */
-      .label-4x2 { page-break-after: always; } /* one label per page */
+      body > *    { display: none !important; }
+      #printArea  { display: block !important; }
+      .label-4x2  { page-break-after: always; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ══════════════════════════════════════════════════════════
-    HTML SECTION — TEST PAGE UI
-    This is the form that lets you enter test data and preview
-    the label on screen. In production this whole UI goes away
-    and the server variables feed data directly into buildLabel().
-  ══════════════════════════════════════════════════════════ -->
-
-  <header>
-    <div class="logo-dot"></div>
-    <h1>Label Print Test — 4×2 Zebra</h1>
-    <span class="badge">SANDBOX</span>
-  </header>
-
-  <div class="notice">
-    <strong>✓ No VBS, no registry, no plugins needed</strong>
-    Uses <code>window.print()</code> — standard JavaScript, works in Chrome and Edge.
-    Prints to whatever printer is set as default in
-    <code>Windows Settings → Printers & Scanners</code>.
-    Works on Zebra, TSC, HP — any printer with a Windows driver.
-    Label size comes from the printer driver, not this code.
+  <!-- ══════════════════════════════════════════════════════
+    HTML — TOP BAR
+    Matches the blue bar at top of screenshot with account
+    info and navigation links.
+  ══════════════════════════════════════════════════════ -->
+  <div class="top-bar">
+    <div class="top-bar-left">Hello Zking Zhou</div>
+    <div class="top-bar-right">
+      <span>Account: admin &nbsp; Company: IGS &nbsp; Dept: QA</span>
+      <a href="#">Back</a>
+      <a href="#">Forward</a>
+      <a href="#">exit</a>
+    </div>
   </div>
 
-  <div class="grid">
-
-    <!-- Left card: main label fields -->
-    <div class="card">
-      <div class="card-label">Label Data</div>
-
-      <label>D P/N</label>
-      <input type="text" id="z_dpn"  value="400FY"/>
-
-      <label>PPID</label>
-      <input type="text" id="z_ppid" value="VN0400FYWSV0042304C8"/>
-
-      <label>Description (e.g. Diablo MTL-P 16)</label>
-      <input type="text" id="z_desc" value="Diablo MTL-P 16"/>
-
-      <label>DATE</label>
-      <input type="text" id="z_date" value="2026/4/24"/>
+  <!-- ══════════════════════════════════════════════════════
+    HTML — LOGO BAR
+    White row with IGS logo, Repair Services, Test DB.
+  ══════════════════════════════════════════════════════ -->
+  <div class="logo-bar">
+    <div class="logo-box">
+      <div class="igs-text">IGS</div>
+      <span class="sub-text">INTERNASH<br>GLOBAL SERVICES, LLC</span>
     </div>
-
-    <!-- Right card: rev numbers, CO, refurb toggle -->
-    <div class="card">
-      <div class="card-label">Rev / CO</div>
-
-      <label>ASSY REV</label>
-      <input type="text" id="z_assy" value="A00"/>
-
-      <label>BIOS REV</label>
-      <input type="text" id="z_bios" value="A99"/>
-
-      <label>CO</label>
-      <input type="text" id="z_co" value="RTVCSAT212711421S"/>
-
-      <!-- Checkbox toggles the REFURBISHED banner and asterisk -->
-      <div class="checkbox-row" style="margin-top:6px">
-        <input type="checkbox" id="z_refurb"/>
-        <label for="z_refurb">REFURBISHED (adds banner + asterisk)</label>
-      </div>
-    </div>
-
-    <!-- Full width card: live preview + print button -->
-    <div class="card full">
-      <div class="card-label">
-        Label Preview
-        <span style="color:var(--muted);font-size:.7rem">(live — updates as you type)</span>
-      </div>
-
-      <!-- On-screen preview renders here -->
-      <div class="label-screen-wrap">
-        <div id="screenLabel"></div>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="printLabel()">▶ Print Label</button>
-      </div>
-    </div>
-
+    <div class="logo-bar-center">Repair Services</div>
+    <div class="logo-bar-right">Test DB</div>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════════
-    PRINT AREA
-    Hidden on screen. When printLabel() is called, the label
-    HTML gets injected here, window.print() fires, the browser
-    sends only this div to the printer, then it gets cleared.
-  ══════════════════════════════════════════════════════════ -->
+  <!-- ══════════════════════════════════════════════════════
+    HTML — MAIN LAYOUT (nav + content)
+  ══════════════════════════════════════════════════════ -->
+  <div class="main-layout">
+
+    <!-- ══════════════════════════════════════════════════
+      HTML — LEFT NAVIGATION
+      Same nav items as the screenshot.
+      In production these are real links to each station page.
+      onclick="setActive(this)" just highlights the clicked item
+      in this sandbox.
+    ══════════════════════════════════════════════════════ -->
+    <nav class="left-nav">
+      <div class="nav-header">STATION</div>
+      <a class="nav-item" onclick="setActive(this)">QT1</a>
+      <a class="nav-item" onclick="setActive(this)">VI</a>
+      <a class="nav-item" onclick="setActive(this)">QT2</a>
+      <a class="nav-item" onclick="setActive(this)">FT</a>
+      <a class="nav-item" onclick="setActive(this)">RUNIN</a>
+      <a class="nav-item" onclick="setActive(this)">COSM</a>
+      <a class="nav-item" onclick="setActive(this)">DetailRev</a>
+      <a class="nav-item" onclick="setActive(this)">R1</a>
+      <a class="nav-item" onclick="setActive(this)">R2</a>
+      <a class="nav-item" onclick="setActive(this)">R3</a>
+      <a class="nav-item" onclick="setActive(this)">ECO</a>
+      <a class="nav-item" onclick="setActive(this)">OBA</a>
+      <a class="nav-item" onclick="setActive(this)">FA</a>
+      <a class="nav-item" onclick="setActive(this)">QT3</a>
+      <a class="nav-item" onclick="setActive(this)">R4</a>
+      <a class="nav-item" onclick="setActive(this)">R6</a>
+      <a class="nav-item active" onclick="setActive(this)">Reprint Label</a>
+      <a class="nav-item" onclick="setActive(this)">Reprint Label</a>
+      <a class="nav-item" onclick="setActive(this)">Check PPID</a>
+      <a class="nav-item" onclick="setActive(this)">SCRAP New</a>
+      <a class="nav-item" onclick="setActive(this)">WaitingComponent</a>
+      <a class="nav-item" onclick="setActive(this)">QualityIssue</a>
+      <a class="nav-item" onclick="setActive(this)">ModifyPrealert</a>
+      <a class="nav-item" onclick="setActive(this)">PI</a>
+      <a class="nav-item" onclick="setActive(this)">API</a>
+      <a class="nav-item" onclick="setActive(this)">API2</a>
+      <a class="nav-item" onclick="setActive(this)">OBA2</a>
+      <a class="nav-item" onclick="setActive(this)">ReworkRecv</a>
+      <a class="nav-item" onclick="setActive(this)">Change</a>
+      <a class="nav-item" onclick="setActive(this)">SHIP CPU</a>
+      <a class="nav-item" onclick="setActive(this)">WaitingRepairPI</a>
+      <a class="nav-item" onclick="setActive(this)">WaitingBGAPI</a>
+      <a class="nav-item" onclick="setActive(this)">WaitingWIPPI</a>
+      <a class="nav-item" onclick="setActive(this)">Repairminipandian</a>
+      <a class="nav-item" onclick="setActive(this)">WIPminipandian</a>
+      <a class="nav-item" onclick="setActive(this)">ReprintMini</a>
+      <a class="nav-item" onclick="setActive(this)">ScrapPI</a>
+      <a class="nav-item" onclick="setActive(this)">RUNIN1</a>
+    </nav>
+
+    <!-- ══════════════════════════════════════════════════
+      HTML — MAIN CONTENT
+      Board Diagnosis form matching the screenshot layout.
+    ══════════════════════════════════════════════════════ -->
+    <div class="main-content">
+
+      <div class="form-title">Board Diagnosis</div>
+
+      <!-- Customer dropdown -->
+      <div class="form-row">
+        <label>Customer :</label>
+        <select id="customer">
+          <option>ComT</option>
+          <option>IGS</option>
+          <option>Other</option>
+        </select>
+        <!-- Admin dropdown to the right, matches screenshot -->
+        <select id="adminRole" style="margin-left:20px">
+          <option>admin</option>
+        </select>
+      </div>
+
+      <!-- Station ID dropdown -->
+      <div class="form-row">
+        <label>Staition ID :</label>
+        <select id="stationId">
+          <option>COSM</option>
+          <option>QT1</option>
+          <option>QT2</option>
+          <option>FT</option>
+          <option>RUNIN</option>
+        </select>
+      </div>
+
+      <!-- Board count — static display, matches screenshot -->
+      <div class="board-count">Board Count: &nbsp; 192</div>
+
+      <!-- Scan PPID input field -->
+      <div class="form-row">
+        <label>Scan PPID</label>
+        <input type="text" id="scanPPID" placeholder=""/>
+      </div>
+
+      <!-- CPU SN field -->
+      <div class="form-row">
+        <label>CPU SN:</label>
+        <input type="text" id="cpuSN" placeholder=""/>
+      </div>
+
+      <!-- Print button -->
+      <!-- In production this fires automatically after a scan,
+           or boss calls printLabel() from his server-side script -->
+      <button class="print-btn" onclick="printLabel()">▶ Print Label</button>
+
+      <!-- Result section — matches bottom of screenshot -->
+      <div class="result-section">
+        <div class="result-row">RTC PN:</div>
+        <div class="result-row">Current Board Results</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+    PRINT AREA — hidden on screen
+    Label HTML gets injected here when printLabel() fires.
+    @media print shows only this div, hides everything else.
+  ══════════════════════════════════════════════════════ -->
   <div id="printArea"></div>
 
 
-  <!-- ══════════════════════════════════════════════════════════
-    JAVASCRIPT SECTION
-    Three functions:
-      1. makeBarcode()   — creates a barcode SVG element
-      2. buildLabel()    — assembles the full label DOM element
-      3. updatePreview() — renders label into the screen preview
-      4. printLabel()    — renders label into printArea, fires print
-  ══════════════════════════════════════════════════════════ -->
   <script>
+    // ══════════════════════════════════════════════════════
+    // JS — NAV ACTIVE STATE
+    // Highlights whichever nav item was clicked.
+    // In production the server sets the active page.
+    // ══════════════════════════════════════════════════════
+    function setActive(el) {
+      document.querySelectorAll('.nav-item').forEach(function(i) {
+        i.classList.remove('active');
+      });
+      el.classList.add('active');
+    }
 
-    // ── makeBarcode(value, height) ───────────────────────────
-    // Creates and returns an SVG element containing a CODE128
-    // barcode for the given value. Uses the JsBarcode library
-    // loaded at the top of the file.
-    // CODE128 is the same format your original ActiveX code used.
+    // ══════════════════════════════════════════════════════
+    // JS — makeBarcode(value, height)
+    // Creates and returns an SVG barcode element (CODE128).
+    // Uses JsBarcode library loaded at top of file.
+    // ══════════════════════════════════════════════════════
     function makeBarcode(value, height) {
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('class', 'bc');
       try {
         JsBarcode(svg, value || '?', {
           format: 'CODE128',
-          displayValue: false, // don't show the text below barcode
+          displayValue: false,
           margin: 0,
           height: height || 28,
-          width: 1              // bar width in pixels
+          width: 1
         });
-      } catch(e) {
-        // If value is empty or invalid, barcode is left blank
-      }
+      } catch(e) {}
       return svg;
     }
 
-    // ── buildLabel() ─────────────────────────────────────────
-    // Reads all the field values and builds the label as a
-    // DOM element (a div with the label-4x2 CSS class).
-    // Returns the element — does NOT insert it into the page.
-    // Called by both updatePreview() and printLabel().
+    // ══════════════════════════════════════════════════════
+    // JS — buildLabel()
+    // Builds the 4x2 label as a DOM element and returns it.
+    // Called by printLabel().
+    //
+    // ── DATA SOURCE ──────────────────────────────────────
+    // SANDBOX: uses hardcoded test values below.
+    // PRODUCTION: boss replaces hardcoded values with his
+    // server template variables, for example:
+    //
+    //   var dpn    = '<%=getDPN() %>'
+    //   var ppid   = '<%=getPPID() %>'
+    //   var desc   = '<%=getDesc() %>'
+    //   var assy   = '<%=getAssyRev() %>'
+    //   var bios   = '<%=getBiosRev() %>'
+    //   var date   = '<%=getDate() %>'
+    //   var co     = '<%=getCO() %>'
+    //   var refurb = '<%=getRefurb() %>' === 'true'
+    //
+    // The rest of buildLabel() stays exactly the same.
+    // ══════════════════════════════════════════════════════
     function buildLabel() {
 
-      // ── DATA SOURCE ───────────────────────────────────────
-      // TEST PAGE: reads from the input fields on screen.
-      // PRODUCTION: boss replaces these lines with server vars:
-      //
-      //   var dpn    = '<%=getDPN() %>'
-      //   var ppid   = '<%=getPPID() %>'
-      //   var desc   = '<%=getDesc() %>'
-      //   var assy   = '<%=getAssyRev() %>'
-      //   var bios   = '<%=getBiosRev() %>'
-      //   var date   = '<%=getDate() %>'
-      //   var co     = '<%=getCO() %>'
-      //   var refurb = '<%=getRefurb() %>' === 'true'
-      //
-      var dpn    = document.getElementById('z_dpn').value;
-      var ppid   = document.getElementById('z_ppid').value;
-      var desc   = document.getElementById('z_desc').value;
-      var assy   = document.getElementById('z_assy').value;
-      var bios   = document.getElementById('z_bios').value;
-      var date   = document.getElementById('z_date').value;
-      var co     = document.getElementById('z_co').value;
-      var refurb = document.getElementById('z_refurb').checked;
-      // ── END DATA SOURCE ───────────────────────────────────
+      // ── REPLACE THESE WITH SERVER VARIABLES IN PRODUCTION ──
+      var dpn    = '400FY';
+      var ppid   = 'VN0400FYWSV0042304C8';
+      var desc   = 'Diablo MTL-P 16';
+      var assy   = 'A00';
+      var bios   = 'A99';
+      var date   = '2026/4/24';
+      var co     = 'RTVCSAT212711421S';
+      var refurb = false;
+      // ── END REPLACE SECTION ─────────────────────────────────
 
-      // Create the outer label container div
+      // Create outer label container
       var wrap = document.createElement('div');
       wrap.className = 'label-4x2';
 
-      // ── REFURB ELEMENTS ───────────────────────────────────
-      // Only added when refurb is true.
-      // Server variable <%=getRefurb()%> will return 'true'/'false'
+      // Refurbished elements — only shown when refurb = true
       if (refurb) {
-        // "REFURBISHED" box at top center
         var banner = document.createElement('div');
         banner.className = 'refurb-banner';
         banner.textContent = 'REFURBISHED';
         wrap.appendChild(banner);
 
-        // Asterisk top right
         var ast = document.createElement('div');
         ast.className = 'asterisk';
         ast.textContent = '*';
         wrap.appendChild(ast);
 
-        // Large part number centered below banner
         var rpn = document.createElement('div');
         rpn.className = 'refurb-pn';
         rpn.textContent = dpn;
         wrap.appendChild(rpn);
       }
 
-      // ── LEFT COLUMN ───────────────────────────────────────
-      // Contains: D P/N, barcode, PPID, Description, barcode,
-      //           DATE, barcode
+      // Left column: D P/N, PPID, Description, DATE
       var left = document.createElement('div');
       left.className = 'col-left' + (refurb ? ' pushed' : '');
-      // "pushed" class shifts content down when refurb banner is showing
 
-      // D P/N text + barcode
       var r1 = document.createElement('div');
       r1.className = 'field-row';
       r1.innerHTML = '<b>D P/N:</b>' + dpn;
       left.appendChild(r1);
       left.appendChild(makeBarcode(dpn, 26));
 
-      // PPID — text only, no barcode (matches photo)
       var r2 = document.createElement('div');
       r2.className = 'field-row';
       r2.style.marginTop = '0.02in';
       r2.innerHTML = '<b>PPID: </b>' + ppid;
       left.appendChild(r2);
 
-      // Description text + barcode
       var r3 = document.createElement('div');
       r3.className = 'field-row';
       r3.style.marginTop = '0.02in';
@@ -469,7 +557,6 @@
       left.appendChild(r3);
       left.appendChild(makeBarcode(desc, 24));
 
-      // DATE text + barcode
       var r4 = document.createElement('div');
       r4.className = 'field-row';
       r4.style.marginTop = '0.02in';
@@ -479,12 +566,10 @@
 
       wrap.appendChild(left);
 
-      // ── RIGHT COLUMN ──────────────────────────────────────
-      // Contains: ASSY REV + barcode, BIOS REV + barcode
+      // Right column: ASSY REV, BIOS REV
       var right = document.createElement('div');
       right.className = 'col-right' + (refurb ? ' pushed' : '');
 
-      // ASSY REV label + barcode
       var al = document.createElement('div');
       al.className = 'rev-label';
       al.textContent = 'ASSY REV:' + assy;
@@ -493,7 +578,6 @@
       abc.className = 'rev-bc';
       right.appendChild(abc);
 
-      // BIOS REV label + barcode
       var bl = document.createElement('div');
       bl.className = 'rev-label';
       bl.textContent = 'BIOS REV:' + bios;
@@ -504,8 +588,7 @@
 
       wrap.appendChild(right);
 
-      // ── CO LINE ───────────────────────────────────────────
-      // Pinned to bottom-left of the label
+      // CO line pinned to bottom left
       var co_el = document.createElement('div');
       co_el.className = 'co-row';
       co_el.innerHTML = '<b>CO: </b>' + co;
@@ -514,54 +597,34 @@
       return wrap;
     }
 
-    // ── updatePreview() ──────────────────────────────────────
-    // Rebuilds and renders the label into the on-screen preview
-    // box every time an input field changes.
-    function updatePreview() {
-      var el = document.getElementById('screenLabel');
-      el.innerHTML = '';
-      el.appendChild(buildLabel());
-    }
-
-    // Wire every input and the checkbox to updatePreview
-    // so the preview updates live as the user types
-    ['z_dpn','z_ppid','z_desc','z_assy','z_bios','z_date','z_co','z_refurb'].forEach(function(id) {
-      document.getElementById(id).addEventListener('input',  updatePreview);
-      document.getElementById(id).addEventListener('change', updatePreview);
-    });
-
-    // Render initial preview on page load
-    updatePreview();
-
-    // ── printLabel() ─────────────────────────────────────────
-    // Injects the label into the hidden #printArea div, then
-    // calls window.print() which sends it to the default printer.
+    // ══════════════════════════════════════════════════════
+    // JS — printLabel()
+    // Injects the label into #printArea then calls
+    // window.print() which sends to the default Windows
+    // printer. No dialog after first use — Chrome remembers
+    // the last selected printer automatically.
     //
-    // window.print() is standard JavaScript — works in Chrome,
-    // Edge, Firefox, Safari. Nothing to do with IE or ActiveX.
-    // The @media print CSS above hides everything except
-    // #printArea so only the label gets sent to the printer.
-    //
-    // To switch printers: change the default printer in
-    // Windows Settings → Printers & Scanners. No code changes.
+    // To switch printers: change default in
+    // Windows Settings → Printers & Scanners.
+    // Zero code changes needed.
+    // ══════════════════════════════════════════════════════
     function printLabel() {
       var area = document.getElementById('printArea');
       area.innerHTML = '';
       area.appendChild(buildLabel());
 
-      // 300ms delay lets JsBarcode finish rendering the SVG
+      // 300ms delay: lets JsBarcode finish rendering SVG
       // barcodes before window.print() fires. Without this
-      // the barcodes sometimes print as blank boxes.
+      // barcodes can print as blank boxes.
       setTimeout(function() {
         window.print();
-
-        // Clean up the print area after printing is done
+        // Clear print area after printing
         setTimeout(function() {
           area.innerHTML = '';
         }, 2000);
       }, 300);
     }
-
   </script>
+
 </body>
 </html>
